@@ -86,11 +86,9 @@ def getProject(project_id):
             if i['percentageCompleted'] == 'None':
                 i['percentageCompleted'] = 0;
 
-
-
             items_list.append(i)
 
-        return jsonify(items_list)
+        return jsonify(items_list[0])
     except Exception as e:
         return {'error': str(e)}
 
@@ -113,25 +111,106 @@ def postProject():
 
     return jsonify(request.json)
 
-@app.route('/api/projects/<string:project_id>', methods=['PUT'])
-def putProject(project_id):
-    data = request.json
-    print('PUT', data)
-
+@app.route('/api/projects/<string:project_id>', methods=['DELETE'])
+def deleteProject(project_id):
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
-            u"VALUES (%s, %s, %s, %s, now(), now())"
 
-        #cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
-        #conn.commit()
+        q = u" DELETE FROM `projects` WHERE `project_id` = %s"
+
+        cursor.execute(q, (project_id))
+        conn.commit()
     except Exception as ex:
         print(ex)
     finally:
         conn.close()
 
     return jsonify(request.json)
+
+@app.route('/api/projects/<string:project_id>', methods=['PUT'])
+def putProject(project_id):
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" UPDATE `projects` SET `name`=%s, `description`=%s, `size`=%s, " \
+            u" `methodology`=%s, `user_modified_at`=now()" \
+            u" WHERE `project_id` = %s"
+
+        cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology'], data['projectId']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/projects/requirements/<string:project_id>', methods=['GET'])
+def getRequirementsByProjectId(project_id):
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        query = "SELECT * FROM requirements_get_all WHERE project_id = {}"\
+            .format(project_id)
+        cursor.execute(query)
+        data = cursor.fetchall()
+
+        items_list = [];
+
+        for item in data:
+            i = {
+                'requirementId': item[0],
+                'projectId': item[1],
+                'title': item[2],
+                'description': item[3],
+                'type': item[4],
+                'rat': item[5],
+                'translated': item[6],
+                'userModifiedAt': str(item[7]),
+                'botModifiedAt': str(item[8]),
+                'createdAt': str(item[9]),
+                'tasksCount': str(item[10]),
+                'percentageCompleted': str(item[11])
+            }
+
+            if i['percentageCompleted'] == 'None':
+                i['percentageCompleted'] = 0;
+
+            items_list.append(i)
+
+        return jsonify(items_list)
+    except Exception as e:
+        return {'error': str(e)}
+
+@app.route('/api/projects/categories/<string:project_id>', methods=['GET'])
+def getCategoriesByProjectId(project_id):
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        query = "SELECT c.* FROM {} p INNER JOIN {} c ON c.project_id = p.project_id WHERE p.project_id = {}" \
+            .format("projects", "categories", project_id)
+        cursor.execute(query)
+        data = cursor.fetchall()
+
+        items_list = [];
+
+        for item in data:
+            i = {
+                'category_id': item[0],
+                'name': item[2],
+                'confidence': item[3]
+            }
+            items_list.append(i)
+
+        return jsonify(items_list)
+    except Exception as e:
+        return {'error': str(e)}
 
 
 @app.route('/api/categories', methods=['GET'])
@@ -157,40 +236,15 @@ def getCategories():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-@app.route('/api/categories/<string:project_id>', methods=['GET'])
-def getCategoriesByProjectId(project_id):
+
+@app.route('/api/requirements/<string:requirement_id>', methods=['GET'])
+def getRequirement(requirement_id):
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        query = "SELECT c.* FROM {} p INNER JOIN {} c ON c.project_id = p.project_id WHERE p.project_id = {}"\
-            .format("projects", "categories", project_id)
-        cursor.execute(query)
-        data = cursor.fetchall()
-
-        items_list = [];
-
-        for item in data:
-            i = {
-                'category_id': item[0],
-                'name': item[2],
-                'confidence': item[3]
-            }
-            items_list.append(i)
-
-        return jsonify(items_list)
-    except Exception as e:
-        return {'error': str(e)}
-
-
-@app.route('/api/requirements/<string:project_id>', methods=['GET'])
-def getRequirements(project_id):
-    try:
-        conn = mysql.connect()
-        cursor = conn.cursor()
-
-        query = "SELECT * FROM requirements_get_all WHERE project_id = {}"\
-            .format(project_id)
+        query = "SELECT * FROM requirements_get_all WHERE requirement_id = {}"\
+            .format(requirement_id)
         cursor.execute(query)
         data = cursor.fetchall()
 
@@ -199,6 +253,7 @@ def getRequirements(project_id):
         for item in data:
             i = {
                 'requirementId': item[0],
+                'projectId': item[1],
                 'title': item[2],
                 'description': item[3],
                 'type': item[4],
@@ -216,23 +271,61 @@ def getRequirements(project_id):
 
             items_list.append(i)
 
-        return jsonify(items_list)
+        return jsonify(items_list[0])
     except Exception as e:
         return {'error': str(e)}
 
 @app.route('/api/requirements', methods=['POST'])
 def postRequirement():
     data = request.json
-    print(data)
 
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
-            u"VALUES (%s, %s, %s, %s, now(), now())"
+        q = u"INSERT INTO `requirements` (`title`, `description`, `project_id`, `type`, `rat`, `user_modified_at`, `created_at`) " \
+            u"VALUES (%s, %s, %s, %s, %s, now(), now())"
 
-        #cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
-        #conn.commit()
+        cursor.execute(q, (data['title'], data['description'], data['projectId'], data['type'], data['rat']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/requirements/<string:requirement_id>', methods=['PUT'])
+def putRequirement(requirement_id):
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" UPDATE `requirements` SET `title`=%s, `description`=%s, `project_id`=%s, " \
+            u" `type`=%s, `rat`=%s, `user_modified_at`=now()" \
+            u" WHERE `requirement_id` = %s"
+
+        cursor.execute(q, (data['title'], data['description'], data['projectId'], data['type'],
+                           data['rat'], data['requirementId']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/requirements/<string:requirement_id>', methods=['DELETE'])
+def deleteRequirement(requirement_id):
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" DELETE FROM `requirements` WHERE `requirement_id` = %s"
+
+        cursor.execute(q, (requirement_id))
+        conn.commit()
     except Exception as ex:
         print(ex)
     finally:
@@ -350,14 +443,69 @@ def getTasksByRequirementId(requirement_id):
                 'percentageCompleted': str(item[3])
             }
 
-            if i['percentageCompleted'] == 'None':
-                i['percentageCompleted'] = 0;
-
             items_list.append(i)
 
         return jsonify(items_list)
     except Exception as e:
         return jsonify({'error': str(e)})
+
+@app.route('/api/tasks', methods=['POST'])
+def postTask():
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        q = u"INSERT INTO `tasks` (`name`, `requirement_id`, `percentage_completed`, `created_at`) " \
+            u"VALUES (%s, %s, %s, now())"
+
+        cursor.execute(q, (data['name'], data['requirementId'], data['percentageCompleted']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/tasks/<string:task_id>', methods=['PUT'])
+def putTask(task_id):
+    data = request.json
+
+    print(data)
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" UPDATE `tasks` SET `name`=%s, `percentage_completed`=%s, `user_modified_at`=now() " \
+            u" WHERE `task_id` = %s"
+
+        cursor.execute(q, (data['name'], data['percentageCompleted'], data['taskId']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/tasks/<string:task_id>', methods=['DELETE'])
+def deleteTask(task_id):
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" DELETE FROM `tasks` WHERE `task_id` = %s"
+
+        cursor.execute(q, (task_id))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
 
 
 if __name__ == '__main__':
