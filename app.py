@@ -21,7 +21,7 @@ def getProjects():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        query = u"SELECT * FROM projects_get_all;"
+        query = u"SELECT * FROM projects_get_all ORDER BY name ASC;"
         cursor.execute(query)
         data = cursor.fetchall()
 
@@ -32,18 +32,17 @@ def getProjects():
                 'projectId': item[0],
                 'name': item[1],
                 'description': item[2],
-                'translated': item[3],
-                'classified': item[4],
-                'userModifiedAt': str(item[5]),
-                'botModifiedAt': str(item[6]),
-                'createdAt': str(item[7]),
-                'categoriesCount': item[8],
-                'requirementsCount': item[9],
-                'tasksCount': str(item[10]),
-                'percentageCompleted': str(item[11]),
-                'size': item[12],
-                'methodology': item[13],
-                'recommendationsCount': item[14]
+                'size': item[3],
+                'methodology': item[4],
+                'translated': item[5],
+                'classified': item[6],
+                'userModifiedAt': str(item[7]),
+                'botModifiedAt': str(item[8]),
+                'createdAt': str(item[9]),
+                'categoriesCount': item[10],
+                'requirementsCount': item[11],
+                'tasksCount': str(item[12]),
+                'percentageCompleted': str(item[13])
             }
 
             if i['percentageCompleted'] == 'None':
@@ -71,28 +70,69 @@ def getProject(project_id):
                 'projectId': item[0],
                 'name': item[1],
                 'description': item[2],
-                'translated': item[3],
-                'classified': item[4],
-                'userModifiedAt': str(item[5]),
-                'botModifiedAt': str(item[6]),
-                'createdAt': str(item[7]),
-                'categoriesCount': item[8],
-                'requirementsCount': item[9],
-                'tasksCount': str(item[10]),
-                'percentageCompleted': str(item[11]),
-                'size': item[12],
-                'methodology': item[13],
-                'recommendationsCount': item[14]
+                'size': item[3],
+                'methodology': item[4],
+                'translated': item[5],
+                'classified': item[6],
+                'userModifiedAt': str(item[7]),
+                'botModifiedAt': str(item[8]),
+                'createdAt': str(item[9]),
+                'categoriesCount': item[10],
+                'requirementsCount': item[11],
+                'tasksCount': str(item[12]),
+                'percentageCompleted': str(item[13])
             }
 
             if i['percentageCompleted'] == 'None':
                 i['percentageCompleted'] = 0;
+
+
 
             items_list.append(i)
 
         return jsonify(items_list)
     except Exception as e:
         return {'error': str(e)}
+
+@app.route('/api/projects', methods=['POST'])
+def postProject():
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
+            u"VALUES (%s, %s, %s, %s, now(), now())"
+
+        cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/projects/<string:project_id>', methods=['PUT'])
+def putProject(project_id):
+    data = request.json
+    print('PUT', data)
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
+            u"VALUES (%s, %s, %s, %s, now(), now())"
+
+        #cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
+        #conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
 
 @app.route('/api/categories', methods=['GET'])
 def getCategories():
@@ -142,6 +182,7 @@ def getCategoriesByProjectId(project_id):
     except Exception as e:
         return {'error': str(e)}
 
+
 @app.route('/api/requirements/<string:project_id>', methods=['GET'])
 def getRequirements(project_id):
     try:
@@ -178,6 +219,27 @@ def getRequirements(project_id):
         return jsonify(items_list)
     except Exception as e:
         return {'error': str(e)}
+
+@app.route('/api/requirements', methods=['POST'])
+def postRequirement():
+    data = request.json
+    print(data)
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
+            u"VALUES (%s, %s, %s, %s, now(), now())"
+
+        #cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
+        #conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
 
 @app.route('/api/recommendations/requirements/<string:requirement_id>', methods=['GET'])
 def getRecommendationsByRequirementId(requirement_id):
@@ -248,7 +310,7 @@ def getRecommendationsByProjectId(project_id):
         return jsonify({'error': str(e)})
 
 @app.route('/api/recommendations/projects', methods=['POST'])
-def post():
+def postRecommendation():
     data = request.json
 
     try:
@@ -265,6 +327,7 @@ def post():
         conn.close()
 
     return jsonify(request.json)
+
 
 @app.route('/api/tasks/<string:requirement_id>', methods=['GET'])
 def getTasksByRequirementId(requirement_id):
@@ -298,4 +361,4 @@ def getTasksByRequirementId(requirement_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
