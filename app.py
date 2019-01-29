@@ -16,6 +16,7 @@ mysql.init_app(app)
 api = Api(app)
 
 
+# Projects
 @app.route('/api/projects', methods=['GET'])
 def getProjects():
     try:
@@ -193,8 +194,10 @@ def getCategoriesByProjectId(project_id):
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        query = "SELECT c.* FROM {} p INNER JOIN {} c ON c.project_id = p.project_id WHERE p.project_id = {}" \
-            .format("projects", "categories", project_id)
+        query = u"SELECT    c.* FROM {} p " \
+                u"INNER JOIN {} c ON c.project_id = p.project_id " \
+                u"WHERE     p.project_id = {} " \
+                .format("projects", "categories", project_id)
         cursor.execute(query)
         data = cursor.fetchall()
 
@@ -202,7 +205,7 @@ def getCategoriesByProjectId(project_id):
 
         for item in data:
             i = {
-                'category_id': item[0],
+                'categoryId': item[0],
                 'name': item[2],
                 'confidence': item[3]
             }
@@ -213,6 +216,7 @@ def getCategoriesByProjectId(project_id):
         return {'error': str(e)}
 
 
+# Categories
 @app.route('/api/categories', methods=['GET'])
 def getCategories():
     try:
@@ -237,6 +241,7 @@ def getCategories():
         return jsonify({'error': str(e)})
 
 
+# Requirements
 @app.route('/api/requirements/<string:requirement_id>', methods=['GET'])
 def getRequirement(requirement_id):
     try:
@@ -334,6 +339,7 @@ def deleteRequirement(requirement_id):
     return jsonify(request.json)
 
 
+# Recommendations
 @app.route('/api/recommendations/requirements/<string:requirement_id>', methods=['GET'])
 def getRecommendationsByRequirementId(requirement_id):
     try:
@@ -353,14 +359,16 @@ def getRecommendationsByRequirementId(requirement_id):
                 'requirementAId': item[1],
                 'projectAId': item[2],
                 'projectAName': item[3],
-                'requirementADescription': item[4],
-                'requirementBId': item[5],
-                'projectBId': item[6],
-                'projectBName': item[7],
-                'requirementBDescription': item[8],
-                'distance': str(item[9]),
-                'createdAt': str(item[10]),
-                'createdAtDays': item[11]
+                'projectAPercentageCompleted': str(item[4]),
+                'requirementADescription': item[5],
+                'requirementBId': item[6],
+                'projectBId': item[7],
+                'projectBName': item[8],
+                'projectBPercentageCompleted': str(item[9]),
+                'requirementBDescription': item[10],
+                'distance': str(item[11]),
+                'createdAt': str(item[12]),
+                'createdAtDays': item[13]
             }
             items_list.append(i)
 
@@ -387,14 +395,16 @@ def getRecommendationsByProjectId(project_id):
                 'requirementAId': item[1],
                 'projectAId': item[2],
                 'projectAName': item[3],
-                'requirementADescription': item[4],
-                'requirementBId': item[5],
-                'projectBId': item[6],
-                'projectBName': item[7],
-                'requirementBDescription': item[8],
-                'distance': str(item[9]),
-                'createdAt': str(item[10]),
-                'createdAtDays': item[11]
+                'projectAPercentageCompleted': str(item[4]),
+                'requirementADescription': item[5],
+                'requirementBId': item[6],
+                'projectBId': item[7],
+                'projectBName': item[8],
+                'projectBPercentageCompleted': str(item[9]),
+                'requirementBDescription': item[10],
+                'distance': str(item[11]),
+                'createdAt': str(item[12]),
+                'createdAtDays': item[13]
             }
             items_list.append(i)
 
@@ -422,6 +432,7 @@ def postRecommendation():
     return jsonify(request.json)
 
 
+# Tasks
 @app.route('/api/tasks/<string:requirement_id>', methods=['GET'])
 def getTasksByRequirementId(requirement_id):
     try:
@@ -499,6 +510,83 @@ def deleteTask(task_id):
         q = u" DELETE FROM `tasks` WHERE `task_id` = %s"
 
         cursor.execute(q, (task_id))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+
+#Settings
+@app.route('/api/settings', methods=['GET'])
+def getSettings():
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        query = u"SELECT * FROM settings;"
+        cursor.execute(query)
+        data = cursor.fetchall()
+
+        items_list = [];
+
+        for item in data:
+            i = {
+                'onlyProjectsSameSize': item[0],
+                'onlyProjectsSameMethodology': item[1],
+                'distanceAcceptedBetweenRequirements': str(item[2]),
+                'differenceAcceptedBetweenProjectsPercentage': str(item[3])
+            }
+
+            if i['distanceAcceptedBetweenRequirements'] == 'None':
+                i['distanceAcceptedBetweenRequirements'] = 0;
+
+            if i['differenceAcceptedBetweenProjectsPercentage'] == 'None':
+                i['differenceAcceptedBetweenProjectsPercentage'] = 0;
+
+            items_list.append(i)
+
+        return jsonify(items_list)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/settings', methods=['POST'])
+def postSettings():
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+        q = u"INSERT INTO `settings` (`only_projects_same_size`, `only_projects_same_methodology`, " \
+            u"`distance_accepted_between_requirements`, `difference_accepted_between_projects_percentage`) " \
+            u"VALUES (%s, %s, %s, %s)"
+
+        cursor.execute(q, (data['onlyProjectsSameSize'], data['onlyProjectsSameMethodology'],
+                           data['distanceAcceptedBetweenRequirements'],
+                           data['differenceAcceptedBetweenProjectsPercentage']))
+        conn.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        conn.close()
+
+    return jsonify(request.json)
+
+@app.route('/api/settings', methods=['PUT'])
+def putSettings():
+    data = request.json
+
+    try:
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        q = u" UPDATE `settings` SET `only_projects_same_size`=%s, `only_projects_same_methodology`=%s, " \
+            u"`distance_accepted_between_requirements`=%s, `difference_accepted_between_projects_percentage`=%s "
+
+        cursor.execute(q, (data['onlyProjectsSameSize'], data['onlyProjectsSameMethodology'],
+                           data['distanceAcceptedBetweenRequirements'],
+                           data['differenceAcceptedBetweenProjectsPercentage']))
         conn.commit()
     except Exception as ex:
         print(ex)
