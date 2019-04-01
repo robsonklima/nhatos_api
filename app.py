@@ -11,7 +11,7 @@ app.config["DEBUG"] = False
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 app.config['MYSQL_DATABASE_DB'] = 'nhatos'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'Mysql@2018'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'Rkl@2030'
 mysql.init_app(app)
 api = Api(app)
 
