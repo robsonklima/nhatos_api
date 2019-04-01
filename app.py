@@ -11,7 +11,7 @@ app.config["DEBUG"] = False
 app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
 app.config['MYSQL_DATABASE_DB'] = 'nhatos'
 app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'Rkl@2030'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'Mysql@2018'
 mysql.init_app(app)
 api = Api(app)
 
@@ -37,13 +37,10 @@ def getProjects():
                 'methodology': item[4],
                 'translated': item[5],
                 'classified': item[6],
-                'userModifiedAt': str(item[7]),
-                'botModifiedAt': str(item[8]),
-                'createdAt': str(item[9]),
-                'categoriesCount': item[10],
-                'requirementsCount': item[11],
-                'tasksCount': str(item[12]),
-                'percentageCompleted': str(item[13])
+                'categoriesCount': item[7],
+                'requirementsCount': item[8],
+                'tasksCount': str(item[9]),
+                'percentageCompleted': str(item[10])
             }
 
             if i['percentageCompleted'] == 'None':
@@ -75,13 +72,10 @@ def getProject(project_id):
                 'methodology': item[4],
                 'translated': item[5],
                 'classified': item[6],
-                'userModifiedAt': str(item[7]),
-                'botModifiedAt': str(item[8]),
-                'createdAt': str(item[9]),
-                'categoriesCount': item[10],
-                'requirementsCount': item[11],
-                'tasksCount': str(item[12]),
-                'percentageCompleted': str(item[13])
+                'categoriesCount': item[7],
+                'requirementsCount': item[8],
+                'tasksCount': str(item[9]),
+                'percentageCompleted': str(item[10])
             }
 
             if i['percentageCompleted'] == 'None':
@@ -100,8 +94,8 @@ def postProject():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`, `user_modified_at`, `created_at`) " \
-            u"VALUES (%s, %s, %s, %s, now(), now())"
+        q = u"INSERT INTO `projects` (`name`, `description`, `size`, `methodology`) " \
+            u"VALUES (%s, %s, %s, %s)"
 
         cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology']))
         conn.commit()
@@ -138,7 +132,7 @@ def putProject(project_id):
         cursor = conn.cursor()
 
         q = u" UPDATE `projects` SET `name`=%s, `description`=%s, `size`=%s, " \
-            u" `methodology`=%s, `user_modified_at`=now()" \
+            u" `methodology`=%s" \
             u" WHERE `project_id` = %s"
 
         cursor.execute(q, (data['name'], data['description'], data['size'], data['methodology'], data['projectId']))
@@ -172,11 +166,8 @@ def getRequirementsByProjectId(project_id):
                 'type': item[4],
                 'rat': item[5],
                 'translated': item[6],
-                'userModifiedAt': str(item[7]),
-                'botModifiedAt': str(item[8]),
-                'createdAt': str(item[9]),
-                'tasksCount': str(item[10]),
-                'percentageCompleted': str(item[11])
+                'tasksCount': str(item[7]),
+                'percentageCompleted': str(item[8])
             }
 
             if i['percentageCompleted'] == 'None':
@@ -264,11 +255,8 @@ def getRequirement(requirement_id):
                 'type': item[4],
                 'rat': item[5],
                 'translated': item[6],
-                'userModifiedAt': str(item[7]),
-                'botModifiedAt': str(item[8]),
-                'createdAt': str(item[9]),
-                'tasksCount': str(item[10]),
-                'percentageCompleted': str(item[11])
+                'tasksCount': str(item[7]),
+                'percentageCompleted': str(item[8])
             }
 
             if i['percentageCompleted'] == 'None':
@@ -287,8 +275,8 @@ def postRequirement():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `requirements` (`title`, `description`, `project_id`, `type`, `rat`, `user_modified_at`, `created_at`) " \
-            u"VALUES (%s, %s, %s, %s, %s, now(), now())"
+        q = u"INSERT INTO `requirements` (`title`, `description`, `project_id`, `type`, `rat`) " \
+            u"VALUES (%s, %s, %s, %s, %s)"
 
         cursor.execute(q, (data['title'], data['description'], data['projectId'], data['type'], data['rat']))
         conn.commit()
@@ -297,7 +285,7 @@ def postRequirement():
     finally:
         conn.close()
 
-    return jsonify(request.json)
+    return jsonify([data])
 
 @app.route('/api/requirements/<string:requirement_id>', methods=['PUT'])
 def putRequirement(requirement_id):
@@ -308,7 +296,7 @@ def putRequirement(requirement_id):
         cursor = conn.cursor()
 
         q = u" UPDATE `requirements` SET `title`=%s, `description`=%s, `project_id`=%s, " \
-            u" `type`=%s, `rat`=%s, `user_modified_at`=now()" \
+            u" `type`=%s, `rat`=%s" \
             u" WHERE `requirement_id` = %s"
 
         cursor.execute(q, (data['title'], data['description'], data['projectId'], data['type'],
@@ -366,9 +354,7 @@ def getRecommendationsByRequirementId(requirement_id):
                 'projectBName': item[8],
                 'projectBPercentageCompleted': str(item[9]),
                 'requirementBDescription': item[10],
-                'distance': str(item[11]),
-                'createdAt': str(item[12]),
-                'createdAtDays': item[13]
+                'distance': str(item[11])
             }
             items_list.append(i)
 
@@ -402,9 +388,7 @@ def getRecommendationsByProjectId(project_id):
                 'projectBName': item[8],
                 'projectBPercentageCompleted': str(item[9]),
                 'requirementBDescription': item[10],
-                'distance': str(item[11]),
-                'createdAt': str(item[12]),
-                'createdAtDays': item[13]
+                'distance': str(item[11])
             }
             items_list.append(i)
 
@@ -419,8 +403,8 @@ def postRecommendation():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `requirements_recommendations` (`project_id`, `recommendation_id`, `accepted`, `created_at`) " \
-            u"VALUES (%s, %s, %s, now())"
+        q = u"INSERT INTO `requirements_recommendations` (`project_id`, `recommendation_id`, `accepted`) " \
+            u"VALUES (%s, %s, %s)"
 
         cursor.execute(q, (data['projectAId'], data['recommendationId'], data['accepted']))
         conn.commit()
@@ -467,8 +451,8 @@ def postTask():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `tasks` (`name`, `requirement_id`, `percentage_completed`, `created_at`) " \
-            u"VALUES (%s, %s, %s, now())"
+        q = u"INSERT INTO `tasks` (`name`, `requirement_id`, `percentage_completed`) " \
+            u"VALUES (%s, %s, %s)"
 
         cursor.execute(q, (data['name'], data['requirementId'], data['percentageCompleted']))
         conn.commit()
@@ -489,7 +473,7 @@ def putTask(task_id):
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        q = u" UPDATE `tasks` SET `name`=%s, `percentage_completed`=%s, `user_modified_at`=now() " \
+        q = u" UPDATE `tasks` SET `name`=%s, `percentage_completed`=%s" \
             u" WHERE `task_id` = %s"
 
         cursor.execute(q, (data['name'], data['percentageCompleted'], data['taskId']))
@@ -525,7 +509,7 @@ def getSettings():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        query = u"SELECT * FROM settings ORDER BY created_at DESC LIMIT 1;"
+        query = u"SELECT * FROM settings ORDER BY 1 DESC LIMIT 1;"
         cursor.execute(query)
         data = cursor.fetchall()
 
@@ -559,9 +543,8 @@ def postSettings():
         conn = mysql.connect()
         cursor = conn.cursor()
         q = u"INSERT INTO `settings` (`only_projects_same_size`, `only_projects_same_methodology`, " \
-            u"`distance_accepted_between_requirements`, `difference_accepted_between_projects_percentage`," \
-            u" created_at) " \
-            u"VALUES (%s, %s, %s, %s, now());"
+            u"`distance_accepted_between_requirements`, `difference_accepted_between_projects_percentage`)" \
+            u"VALUES (%s, %s, %s, %s);"
 
         cursor.execute(q, (data['onlyProjectsSameSize'], data['onlyProjectsSameMethodology'],
                            data['distanceAcceptedBetweenRequirements'],
