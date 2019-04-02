@@ -1,58 +1,72 @@
+#region Imports
+
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api
 from flask_restful import reqparse
 from flaskext.mysql import MySQL
-import json
+import json, re, simplejson, decimal, datetime
 
+from camel_encoder import CamelEncoder
+from decimal_encoder import DecimalJSONEncoder
+from datetime_encoder import DatetimeEncoder
+
+#endregion
+
+#region Configuration
 
 with open('config/config.json') as json_data_file:
     config = json.load(json_data_file)
 
 mysql = MySQL()
 app = Flask(__name__)
-app.config["DEBUG"] = config["DEBUG"]
-app.config['MYSQL_DATABASE_HOST'] = config["HOST"]
-app.config['MYSQL_DATABASE_DB'] = config["DB"]
-app.config['MYSQL_DATABASE_USER'] = config["USER"]
-app.config['MYSQL_DATABASE_PASSWORD'] = config["PASS"]
+app.config[u"DEBUG"] = config["DEBUG"]
+app.config[u'MYSQL_DATABASE_HOST'] = config["HOST"]
+app.config[u'MYSQL_DATABASE_DB'] = config["DB"]
+app.config[u'MYSQL_DATABASE_USER'] = config["USER"]
+app.config[u'MYSQL_DATABASE_PASSWORD'] = config["PASS"]
 mysql.init_app(app)
 api = Api(app)
 
+#endregion
 
-# Projects
+#region Methods
+
+def camel_to_underscore(name):
+    return re.compile(r'([A-Z])').sub(lambda x: '_' + x.group(1).lower(), name)
+
+def underscore_to_camel(name):
+    return re.compile(r'_([a-z])').sub(lambda x: x.group(1).upper(), name)
+
+def datetime_encoder(o):
+    if isinstance(o, datetime.datetime):
+        return (o.isoformat())
+    else:
+        TypeError("Unknown serializer")
+
+class DecimalEncoder(simplejson.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return str(o)
+        return super(DecimalJSONEncoder, self).default(o)
+
+#endregion
+
+#region Projects
+
 @app.route('/api/projects', methods=['GET'])
 def getProjects():
     try:
-
         conn = mysql.connect()
         cursor = conn.cursor()
         query = u"SELECT * FROM projects_get_all ORDER BY name ASC;"
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'projectId': item[0],
-                'name': item[1],
-                'description': item[2],
-                'size': item[3],
-                'methodology': item[4],
-                'translated': item[5],
-                'classified': item[6],
-                'categoriesCount': item[7],
-                'requirementsCount': item[8],
-                'tasksCount': str(item[9]),
-                'percentageCompleted': str(item[10])
-            }
-
-            if i['percentageCompleted'] == 'None':
-                i['percentageCompleted'] = 0;
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -63,31 +77,13 @@ def getProject(project_id):
         cursor = conn.cursor()
         query = u"SELECT * FROM projects_get_all WHERE project_id = {};".format(project_id)
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'projectId': item[0],
-                'name': item[1],
-                'description': item[2],
-                'size': item[3],
-                'methodology': item[4],
-                'translated': item[5],
-                'classified': item[6],
-                'categoriesCount': item[7],
-                'requirementsCount': item[8],
-                'tasksCount': str(item[9]),
-                'percentageCompleted': str(item[10])
-            }
-
-            if i['percentageCompleted'] == 'None':
-                i['percentageCompleted'] = 0;
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return {'error': str(e)}
 
@@ -157,29 +153,13 @@ def getRequirementsByProjectId(project_id):
         query = "SELECT * FROM requirements_get_all WHERE project_id = {}"\
             .format(project_id)
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'requirementId': item[0],
-                'projectId': item[1],
-                'title': item[2],
-                'description': item[3],
-                'type': item[4],
-                'rat': item[5],
-                'translated': item[6],
-                'tasksCount': str(item[7]),
-                'percentageCompleted': str(item[8])
-            }
-
-            if i['percentageCompleted'] == 'None':
-                i['percentageCompleted'] = 0;
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return {'error': str(e)}
 
@@ -194,81 +174,56 @@ def getCategoriesByProjectId(project_id):
                 u"WHERE     p.project_id = {} " \
                 .format("projects", "categories", project_id)
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'categoryId': item[0],
-                'name': item[2],
-                'confidence': item[3]
-            }
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return {'error': str(e)}
 
+#endregion
 
-# Categories
+#region Categories
+
 @app.route('/api/categories', methods=['GET'])
 def getCategories():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
         query = u"SELECT * FROM categories_get_all;"
-
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'title': item[0],
-                'projectsCount': item[1]
-            }
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
+#endregion
 
-# Requirements
+#region Requirements
+
 @app.route('/api/requirements/<string:requirement_id>', methods=['GET'])
 def getRequirement(requirement_id):
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        query = "SELECT * FROM requirements_get_all WHERE requirement_id = {}"\
-            .format(requirement_id)
+        query = "SELECT * FROM requirements_get_all WHERE requirement_id = {}".format(requirement_id)
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'requirementId': item[0],
-                'projectId': item[1],
-                'title': item[2],
-                'description': item[3],
-                'type': item[4],
-                'rat': item[5],
-                'translated': item[6],
-                'tasksCount': str(item[7]),
-                'percentageCompleted': str(item[8])
-            }
-
-            if i['percentageCompleted'] == 'None':
-                i['percentageCompleted'] = 0;
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return {'error': str(e)}
 
@@ -330,39 +285,24 @@ def deleteRequirement(requirement_id):
 
     return jsonify(request.json)
 
+#endregion
 
-# Recommendations
+#region Recommendations
+
 @app.route('/api/recommendations/requirements/<string:requirement_id>', methods=['GET'])
 def getRecommendationsByRequirementId(requirement_id):
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        query = u"SELECT * FROM recommendations_get_all WHERE requirement_a_id = {} ORDER BY {} ASC;"\
-            .format(requirement_id, "distance")
-
-        cursor.execute(query)
+        query = u"SELECT * FROM recommendations_get_all " \
+                u"WHERE requirement_a_id = {} ORDER BY {} ASC;".format(requirement_id, "distance")
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'recommendationId': item[0],
-                'requirementAId': item[1],
-                'projectAId': item[2],
-                'projectAName': item[3],
-                'projectAPercentageCompleted': str(item[4]),
-                'requirementADescription': item[5],
-                'requirementBId': item[6],
-                'projectBId': item[7],
-                'projectBName': item[8],
-                'projectBPercentageCompleted': str(item[9]),
-                'requirementBDescription': item[10],
-                'distance': str(item[11])
-            }
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -373,30 +313,14 @@ def getRecommendationsByProjectId(project_id):
         cursor = conn.cursor()
         query = u"SELECT * FROM recommendations_get_all WHERE project_a_id = {} ORDER BY {};"\
             .format(project_id, "distance")
-
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'recommendationId': item[0],
-                'requirementAId': item[1],
-                'projectAId': item[2],
-                'projectAName': item[3],
-                'projectAPercentageCompleted': str(item[4]),
-                'requirementADescription': item[6],
-                'requirementBId': item[7],
-                'projectBId': item[8],
-                'projectBName': item[9],
-                'projectBPercentageCompleted': str(item[10]),
-                'requirementBDescription': item[11],
-                'distance': str(item[12])
-            }
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -420,32 +344,26 @@ def postRecommendation():
 
     return jsonify([data])
 
+#endregion
 
-# Tasks
+#region Tasks
+
 @app.route('/api/tasks/<string:requirement_id>', methods=['GET'])
 def getTasksByRequirementId(requirement_id):
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        query = u"SELECT * FROM tasks_get_all WHERE requirement_id = {} ORDER BY {} ASC;"\
-            .format(requirement_id, "name")
-
+        query = u"SELECT * FROM tasks_get_all " \
+                u"WHERE requirement_id = {} " \
+                u"ORDER BY {} ASC;".format(requirement_id, "name")
         cursor.execute(query)
+        row_headers = [CamelEncoder.underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'taskId': item[0],
-                'name': item[1],
-                'requirementId': item[2],
-                'percentageCompleted': str(item[3])
-            }
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -507,8 +425,10 @@ def deleteTask(task_id):
 
     return jsonify(request.json)
 
+#endregion
 
-#Settings
+#region Settings
+
 @app.route('/api/settings', methods=['GET'])
 def getSettings():
     try:
@@ -516,27 +436,13 @@ def getSettings():
         cursor = conn.cursor()
         query = u"SELECT * FROM settings ORDER BY 1 DESC LIMIT 1;"
         cursor.execute(query)
+        row_headers = [underscore_to_camel(x[0]) for x in cursor.description]
         data = cursor.fetchall()
+        json_data = []
+        for result in data:
+            json_data.append(dict(zip(row_headers, result)))
 
-        items_list = [];
-
-        for item in data:
-            i = {
-                'onlyProjectsSameSize': item[0],
-                'onlyProjectsSameMethodology': item[1],
-                'distanceAcceptedBetweenRequirements': str(item[2]),
-                'differenceAcceptedBetweenProjectsPercentage': str(item[3])
-            }
-
-            if i['distanceAcceptedBetweenRequirements'] == 'None':
-                i['distanceAcceptedBetweenRequirements'] = 0;
-
-            if i['differenceAcceptedBetweenProjectsPercentage'] == 'None':
-                i['differenceAcceptedBetweenProjectsPercentage'] = 0;
-
-            items_list.append(i)
-
-        return jsonify(items_list)
+        return simplejson.dumps(json_data, default=datetime_encoder, cls=DecimalEncoder, sort_keys=True, indent=4)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -562,6 +468,11 @@ def postSettings():
 
     return jsonify([data])
 
+#endregion
+
+#region Init
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+#endregion
