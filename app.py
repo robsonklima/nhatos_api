@@ -54,7 +54,6 @@ def getProjects():
 
         return jsonify(items_list)
     except Exception as e:
-        print(e)
         return jsonify({'error': str(e)})
 
 @app.route('/api/projects/<string:project_id>', methods=['GET'])
@@ -396,8 +395,6 @@ def getRecommendationsByProjectId(project_id):
                 'distance': str(item[12])
             }
             items_list.append(i)
-
-        print(items_list)
 
         return jsonify(items_list)
     except Exception as e:
