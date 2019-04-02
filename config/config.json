@@ -1,8 +1,7 @@
 {
-    "mysql": {
-        "user": "root",
-        "password": "Rkl@2030",
-        "host": "127.0.0.1",
-        "database": "nhatos"
-    }
+    "DEBUG": false,
+    "HOST": "127.0.0.1",
+    "DB": "nhatos",
+    "USER": "root",
+    "PASS": "root"
 }

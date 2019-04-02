@@ -5,13 +5,16 @@ from flaskext.mysql import MySQL
 import json
 
 
+with open('config/config.json') as json_data_file:
+    config = json.load(json_data_file)
+
 mysql = MySQL()
 app = Flask(__name__)
-app.config["DEBUG"] = False
-app.config['MYSQL_DATABASE_HOST'] = '127.0.0.1'
-app.config['MYSQL_DATABASE_DB'] = 'nhatos'
-app.config['MYSQL_DATABASE_USER'] = 'root'
-app.config['MYSQL_DATABASE_PASSWORD'] = 'Mysql@2018'
+app.config["DEBUG"] = config["DEBUG"]
+app.config['MYSQL_DATABASE_HOST'] = config["HOST"]
+app.config['MYSQL_DATABASE_DB'] = config["DB"]
+app.config['MYSQL_DATABASE_USER'] = config["USER"]
+app.config['MYSQL_DATABASE_PASSWORD'] = config["PASS"]
 mysql.init_app(app)
 api = Api(app)
 
@@ -20,6 +23,7 @@ api = Api(app)
 @app.route('/api/projects', methods=['GET'])
 def getProjects():
     try:
+
         conn = mysql.connect()
         cursor = conn.cursor()
         query = u"SELECT * FROM projects_get_all ORDER BY name ASC;"
@@ -50,6 +54,7 @@ def getProjects():
 
         return jsonify(items_list)
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)})
 
 @app.route('/api/projects/<string:project_id>', methods=['GET'])
@@ -382,15 +387,17 @@ def getRecommendationsByProjectId(project_id):
                 'projectAId': item[2],
                 'projectAName': item[3],
                 'projectAPercentageCompleted': str(item[4]),
-                'requirementADescription': item[5],
-                'requirementBId': item[6],
-                'projectBId': item[7],
-                'projectBName': item[8],
-                'projectBPercentageCompleted': str(item[9]),
-                'requirementBDescription': item[10],
-                'distance': str(item[11])
+                'requirementADescription': item[6],
+                'requirementBId': item[7],
+                'projectBId': item[8],
+                'projectBName': item[9],
+                'projectBPercentageCompleted': str(item[10]),
+                'requirementBDescription': item[11],
+                'distance': str(item[12])
             }
             items_list.append(i)
+
+        print(items_list)
 
         return jsonify(items_list)
     except Exception as e:
@@ -403,7 +410,8 @@ def postRecommendation():
     try:
         conn = mysql.connect()
         cursor = conn.cursor()
-        q = u"INSERT INTO `requirements_recommendations` (`project_id`, `recommendation_id`, `accepted`) " \
+        q = u"INSERT INTO `requirements_recommendations` " \
+            u"(`project_id`, `recommendation_id`, `accepted`) " \
             u"VALUES (%s, %s, %s)"
 
         cursor.execute(q, (data['projectAId'], data['recommendationId'], data['accepted']))
@@ -413,7 +421,7 @@ def postRecommendation():
     finally:
         conn.close()
 
-    return jsonify(request.json)
+    return jsonify([data])
 
 
 # Tasks
@@ -531,7 +539,7 @@ def getSettings():
 
             items_list.append(i)
 
-        return jsonify(items_list[0])
+        return jsonify(items_list)
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -555,7 +563,7 @@ def postSettings():
     finally:
         conn.close()
 
-    return jsonify(request.json)
+    return jsonify([data])
 
 
 if __name__ == '__main__':
