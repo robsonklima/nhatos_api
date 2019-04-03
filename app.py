@@ -55,9 +55,7 @@ class DecimalEncoder(simplejson.JSONEncoder):
 
 #endregion
 
-#region Resources
-
-#region Projects
+#region Resource Projects
 
 @app.route('/api/projects', methods=['GET'])
 def getProjects():
@@ -192,7 +190,7 @@ def getCategoriesByProjectId(project_id):
 
 #endregion
 
-#region Categories
+#region Resource Categories
 
 @app.route('/api/categories', methods=['GET'])
 def getCategories():
@@ -213,7 +211,7 @@ def getCategories():
 
 #endregion
 
-#region Requirements
+#region Resource Requirements
 
 @app.route('/api/requirements/<string:requirement_id>', methods=['GET'])
 def getRequirement(requirement_id):
@@ -293,7 +291,7 @@ def deleteRequirement(requirement_id):
 
 #endregion
 
-#region Recommendations
+#region Resource Recommendations
 
 @app.route('/api/recommendations/requirements/<string:requirement_id>', methods=['GET'])
 def getRecommendationsByRequirementId(requirement_id):
@@ -352,7 +350,7 @@ def postRecommendation():
 
 #endregion
 
-#region Tasks
+#region Resource Tasks
 
 @app.route('/api/tasks/<string:requirement_id>', methods=['GET'])
 def getTasksByRequirementId(requirement_id):
@@ -433,7 +431,7 @@ def deleteTask(task_id):
 
 #endregion
 
-#region Settings
+#region Resource Settings
 
 @app.route('/api/settings', methods=['GET'])
 def getSettings():
@@ -473,8 +471,6 @@ def postSettings():
         conn.close()
 
     return jsonify([data])
-
-#endregion
 
 #endregion
 
