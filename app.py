@@ -43,6 +43,10 @@ def datetime_encoder(o):
     else:
         TypeError("Unknown serializer")
 
+#endregion
+
+#region Classes
+
 class DecimalEncoder(simplejson.JSONEncoder):
     def default(self, o):
         if isinstance(o, decimal.Decimal):
@@ -50,6 +54,8 @@ class DecimalEncoder(simplejson.JSONEncoder):
         return super(DecimalJSONEncoder, self).default(o)
 
 #endregion
+
+#region Resources
 
 #region Projects
 
@@ -467,6 +473,8 @@ def postSettings():
         conn.close()
 
     return jsonify([data])
+
+#endregion
 
 #endregion
 
